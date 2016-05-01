@@ -1,0 +1,125 @@
+
+
+
+
+func removeAds(){
+
+var ads: Bool {
+return NSUserDefaults.standardUserDefaults().boolForKey("ads")
+}
+
+
+if SKPaymentQueue.canMakePayments() == false {
+print("Cannot perform In App Purchases.")
+UIAlertView(title: "Cannot Purchase", message: "In-app purchases cannot be made on this device", delegate: nil, cancelButtonTitle: "OK").show()
+return
+}
+
+let productRequest = SKProductsRequest(productIdentifiers: self.productIDs)
+productRequest.delegate = self
+productRequest.start()
+
+}
+
+func checkAds(){
+
+//print("checking ads...")
+if ads == false {
+//print("ads are already off, great!")
+return
+}
+//print("ads are not off, trying to restore transactions...")
+//SKPaymentQueue.defaultQueue().addTransactionObserver(self)
+//SKPaymentQueue.defaultQueue().restoreCompletedTransactions()
+
+
+}
+
+func paymentQueue(queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
+
+
+print("Updating... Received Payment Transaction Response from Apple");
+for transaction:AnyObject in transactions {
+if let trans:SKPaymentTransaction = transaction as? SKPaymentTransaction{
+switch trans.transactionState {
+case .Purchased, .Restored:
+print("Purchased purchase/restored \(trans.payment.productIdentifier)")
+SKPaymentQueue.defaultQueue().finishTransaction(transaction as! SKPaymentTransaction)
+NSUserDefaults.standardUserDefaults().setBool(false, forKey: "ads")
+appAdViewController!.disableAds()
+break
+case .Failed:
+print("Purchased Failed \(trans.payment.productIdentifier)")
+SKPaymentQueue.defaultQueue().finishTransaction(transaction as! SKPaymentTransaction)
+break
+default:
+print("default")
+break
+}
+}
+}
+
+}
+
+
+func paymentQueueRestoreCompletedTransactionsFinished(queue: SKPaymentQueue) {
+
+print("Restore completed finished payment queue with \(queue.transactions.count) items")
+if queue.transactions.count != 0 {
+for trans in queue.transactions{
+print("  transaction \(trans.payment.productIdentifier)")
+if trans.transactionState == .Restored || trans.transactionState == .Purchased {
+print("   purchased!")
+NSUserDefaults.standardUserDefaults().setBool(false, forKey: "ads")
+appAdViewController!.disableAds()
+}
+else {
+print("   not yet purchased")
+}
+}
+}
+}
+
+func productsRequest(request: SKProductsRequest, didReceiveResponse response: SKProductsResponse) {
+if response.products.count != 0 {
+for product in response.products {
+print(" found \(product.productIdentifier)")
+// found this, would you like to buy it? -> add payment of course
+if product.productIdentifier == "ads" {
+print("  that's the one, buying it...")
+let payment = SKPayment(product: product)
+SKPaymentQueue.defaultQueue().addPayment(payment)
+}
+
+}
+}
+else {
+print("There are no products.")
+}
+
+
+}
+
+
+func didBuyRemoveAds(){
+
+}
+
+
+
+
+
+
+var productIDs = Set<String>(arrayLiteral: "ads")
+var productsArray = [SKProduct]()
+
+// MARK: advc
+
+
+func disableAds(){
+banner.hidden = true
+UIView.animateWithDuration(0.2, animations: {
+self.layBannerOffset.constant = -self.laybh.constant
+self.view.layoutIfNeeded()
+})
+}
